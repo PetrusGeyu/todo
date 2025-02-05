@@ -4,21 +4,141 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Todo List</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        .completed { text-decoration: line-through; }
+    </style>
 </head>
 <body>
     <h1>Todo List</h1>
     
-    <input type="text" id="todoInput" placeholder="Tambahkan tugas...">
-    <select id="priorityInput">
-        <option value="High">High</option>
-        <option value="Medium" selected>Medium</option>
-        <option value="Low">Low</option>
-    </select>
-    <button onclick="addTodo()">Tambah</button>
+    <div>
+        <input type="text" id="todoInput" placeholder="Tambahkan tugas...">
+        <select id="priorityInput">
+            <option value="High">High</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Low">Low</option>
+        </select>
+        <button onclick="addTodo()">Tambah</button>
+    </div>
 
     <ul id="todoList"></ul>
+    <script>
+        const API_URL = "http://localhost:8080/todos";
 
-    <script src="script.js"></script>
+        async function fetchTodos() {
+            try {
+                const res = await fetch(API_URL);
+                if (!res.ok) throw new Error("Gagal mengambil data");
+                const todos = await res.json();
+                renderTodos(todos);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
+        }
+
+        function renderTodos(todos) {
+            const todoList = document.getElementById("todoList");
+            todoList.innerHTML = "";
+
+            todos.forEach((todo) => {
+                const li = document.createElement("li");
+                li.className = todo.is_completed ? "completed" : "";
+                li.innerHTML = `
+                    <span onclick="toggleComplete(${todo.id}, ${todo.is_completed})">
+                        ${todo.title} - <strong>${todo.priority}</strong>
+                        <br><small>Dibuat: ${formatDate(todo.created_at)}</small>
+                    </span>
+                    <button onclick="editTodo(${todo.id}, '${todo.title}', '${todo.priority}')">Edit</button>
+                    <button onclick="deleteTodo(${todo.id})">Hapus</button>
+                `;
+                todoList.appendChild(li);
+            });
+        }
+
+        async function addTodo() {
+            const input = document.getElementById("todoInput");
+            const priority = document.getElementById("priorityInput").value;
+
+            if (!input.value.trim()) {
+                alert("Judul tidak boleh kosong!");
+                return;
+            }
+
+            try {
+                const res = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ title: input.value, priority }),
+                });
+
+                if (!res.ok) throw new Error("Gagal menambahkan todo");
+
+                input.value = "";
+                fetchTodos();
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function editTodo(id, currentTitle, currentPriority) {
+            const newTitle = prompt("Edit Judul Todo:", currentTitle);
+            if (newTitle === null || newTitle.trim() === "") return;
+
+            const newPriority = prompt("Edit Prioritas (High/Medium/Low):", currentPriority);
+            if (!["High", "Medium", "Low"].includes(newPriority)) {
+                alert("Prioritas harus High, Medium, atau Low!");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title: newTitle,
+                        priority: newPriority,
+                        is_completed: false
+                    }),
+                });
+
+                if (!res.ok) throw new Error("Gagal mengedit todo");
+                fetchTodos();
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function toggleComplete(id, isCompleted) {
+            try {
+                const res = await fetch(`${API_URL}/${id}/toggle`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" }
+                });
+                if (!res.ok) throw new Error("Gagal mengubah status todo");
+                fetchTodos();
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function deleteTodo(id) {
+            if (!confirm("Apakah Anda yakin ingin menghapus?")) return;
+
+            try {
+                const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+                if (!res.ok) throw new Error("Gagal menghapus todo");
+                fetchTodos();
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        fetchTodos();
+    </script>
 </body>
 </html>
