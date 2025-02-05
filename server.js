@@ -5,15 +5,30 @@ const cors = require('cors');
 const { Pool } = require('pg');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT =  8080;
 
 // Database connection
+// Ubah dari 5432 ke 8080
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
   }
 });
+
+
+app.get('/todos', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM todos ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching todos:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // Middleware
 app.use(cors());
 app.use(express.json());
