@@ -79,7 +79,7 @@
                 if (!res.ok) throw new Error("Gagal menambahkan todo");
 
                 input.value = "";
-                fetchTodos();
+                setTimeout(fetchTodos, 500);
             } catch (error) {
                 console.error(error);
             }
@@ -107,7 +107,7 @@
                 });
 
                 if (!res.ok) throw new Error("Gagal mengedit todo");
-                fetchTodos();
+                setTimeout(fetchTodos, 500);
             } catch (error) {
                 console.error(error);
             }
@@ -120,7 +120,7 @@
                     headers: { "Content-Type": "application/json" }
                 });
                 if (!res.ok) throw new Error("Gagal mengubah status todo");
-                fetchTodos();
+                setTimeout(fetchTodos, 500);
             } catch (error) {
                 console.error(error);
             }
@@ -132,7 +132,7 @@
             try {
                 const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
                 if (!res.ok) throw new Error("Gagal menghapus todo");
-                fetchTodos();
+                setTimeout(fetchTodos, 500);
             } catch (error) {
                 console.error(error);
             }
