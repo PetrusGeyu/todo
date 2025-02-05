@@ -9,16 +9,11 @@ const PORT = process.env.PORT || 8080;
 
 // Database connection
 const pool = new Pool({
-  user: process.env.USER,
-  host: process.env.HOST,
-  database: process.env.DATABASE,
-  password: process.env.PASSWORD,
-  port: process.env.PORT,
+  connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
   }
 });
-
 // Middleware
 app.use(cors());
 app.use(express.json());
