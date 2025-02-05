@@ -1,22 +1,28 @@
-// server.js
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const { Pool } = require('pg');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const { Pool } = require("pg");
 
 const app = express();
-const PORT =  8080;
+const PORT = process.env.PORT || 8080;
 
-// Database connection
-// Ubah dari 5432 ke 8080
+// ✅ Middleware CORS harus diaktifkan sebelum route
+const corsOptions = {
+    origin: "*", // Jika ingin mengizinkan semua domain
+    methods: "GET,POST,PUT,PATCH,DELETE",
+    allowedHeaders: "Content-Type",
+};
 
+app.use(cors(corsOptions));
+app.use(express.json());
+
+// ✅ Koneksi ke PostgreSQL di Railway
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false,
+    },
 });
-
 
 app.get('/todos', async (req, res) => {
   try {
@@ -54,6 +60,9 @@ const initDb = async () => {
 };
 
 initDb();
+
+
+
 
 // CRUD Routes
 
