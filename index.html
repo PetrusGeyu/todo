@@ -69,7 +69,7 @@
                         ${todo.title} - <strong>${todo.priority}</strong>
                         <br><small>Dibuat: ${new Date(todo.created_at).toLocaleString("id-ID")}</small>
                     </span>
-                    ${!todo.is_completed ? `<button onclick="toggleComplete(${todo.id})">Complete</button>` : ""}
+                    ${!todo.is_completed ? `<button onclick="toggleComplete(${todo.id})">Complete</button>` : `<button onclick="restoreTodo(${todo.id})">Tambah Kembali</button>`}
                     <button onclick="editTodo(${todo.id}, '${todo.title}', '${todo.priority}')">Edit</button>
                     <button onclick="deleteTodo(${todo.id})">Hapus</button>
                 `;
@@ -111,37 +111,20 @@
             }
         }
 
-        async function editTodo(id, currentTitle, currentPriority) {
-            const newTitle = prompt("Edit Judul Todo:", currentTitle);
-            if (newTitle === null || newTitle.trim() === "") return;
-
-            const newPriority = prompt("Edit Prioritas (High/Medium/Low):", currentPriority);
-            if (!["High", "Medium", "Low"].includes(newPriority)) {
-                alert("Prioritas harus High, Medium, atau Low!");
-                return;
-            }
-
+        async function toggleComplete(id) {
             try {
-                const res = await fetch(`${API_URL}/${id}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        title: newTitle,
-                        priority: newPriority
-                    }),
-                });
-
-                if (!res.ok) throw new Error("Gagal mengedit todo");
+                const res = await fetch(`${API_URL}/${id}/toggle`, { method: "PATCH" });
+                if (!res.ok) throw new Error("Gagal mengubah status todo");
                 setTimeout(fetchTodos, 500);
             } catch (error) {
                 console.error(error);
             }
         }
 
-        async function toggleComplete(id) {
+        async function restoreTodo(id) {
             try {
                 const res = await fetch(`${API_URL}/${id}/toggle`, { method: "PATCH" });
-                if (!res.ok) throw new Error("Gagal mengubah status todo");
+                if (!res.ok) throw new Error("Gagal mengembalikan todo");
                 setTimeout(fetchTodos, 500);
             } catch (error) {
                 console.error(error);
