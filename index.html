@@ -1,30 +1,35 @@
 <!DOCTYPE html>
 <html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Todo List</title>
     <style>
-        .completed { text-decoration: line-through; color: gray; }
-        .hidden { display: none; }
+      .completed {
+        text-decoration: line-through;
+        color: gray;
+      }
+      .hidden {
+        display: none;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Todo List</h1>
 
     <div>
-        <input type="text" id="todoInput" placeholder="Tambahkan tugas...">
-        <select id="priorityInput">
-            <option value="High">High</option>
-            <option value="Medium" selected>Medium</option>
-            <option value="Low">Low</option>
-        </select>
-        <button onclick="addTodo()">Tambah</button>
+      <input type="text" id="todoInput" placeholder="Tambahkan tugas..." />
+      <select id="priorityInput">
+        <option value="High">High</option>
+        <option value="Medium" selected>Medium</option>
+        <option value="Low">Low</option>
+      </select>
+      <button onclick="addTodo()">Tambah</button>
     </div>
 
     <div>
-        <button onclick="showSection('todoList')">Tugas Aktif</button>
-        <button onclick="showSection('historyList')">History</button>
+      <button onclick="showSection('todoList')">Tugas Aktif</button>
+      <button onclick="showSection('historyList')">History</button>
     </div>
 
     <ul id="todoList"></ul>
@@ -32,123 +37,152 @@
     <ul id="historyList" class="hidden"></ul>
 
     <script>
-        const API_URL = "https://todo-production-7421.up.railway.app/todos";
+      const API_URL = "https://todo-production-7421.up.railway.app/todos";
 
-        async function fetchTodos() {
-            try {
-                const res = await fetch(API_URL);
-                if (!res.ok) throw new Error("Gagal mengambil data");
-                const todos = await res.json();
+      async function fetchTodos() {
+          try {
+              const res = await fetch(API_URL);
+              if (!res.ok) throw new Error("Gagal mengambil data");
+              const todos = await res.json();
 
-                const sortedTodos = todos.sort((a, b) => {
-                    const priorityOrder = { High: 1, Medium: 2, Low: 3 };
-                    return priorityOrder[a.priority] - priorityOrder[b.priority];
-                });
+              const sortedTodos = todos.sort((a, b) => {
+                  const priorityOrder = { High: 1, Medium: 2, Low: 3 };
+                  return priorityOrder[a.priority] - priorityOrder[b.priority];
+              });
 
-                renderTodos(sortedTodos);
-            } catch (error) {
-                console.error(error);
-            }
-        }
+              renderTodos(sortedTodos);
+          } catch (error) {
+              console.error(error);
+          }
+      }
 
-        function renderTodos(todos) {
-            const todoList = document.getElementById("todoList");
-            const historyList = document.getElementById("historyList");
-            const historyTitle = document.getElementById("historyTitle");
+      function renderTodos(todos) {
+          const todoList = document.getElementById("todoList");
+          const historyList = document.getElementById("historyList");
+          const historyTitle = document.getElementById("historyTitle");
 
-            todoList.innerHTML = "";
-            historyList.innerHTML = "";
+          todoList.innerHTML = "";
+          historyList.innerHTML = "";
 
-            let hasHistory = false;
+          let hasHistory = false;
 
-            todos.forEach((todo) => {
-                const li = document.createElement("li");
-                li.className = todo.is_completed ? "completed" : "";
-                li.innerHTML = `
-                    <span>
-                        ${todo.title} - <strong>${todo.priority}</strong>
-                        <br><small>Dibuat: ${new Date(todo.created_at).toLocaleString("id-ID")}</small>
-                    </span>
-                    ${!todo.is_completed ? `<button onclick="toggleComplete(${todo.id})">Complete</button>` : `<button onclick="restoreTodo(${todo.id})">Tambah Kembali</button>`}
-                    <button onclick="editTodo(${todo.id}, '${todo.title}', '${todo.priority}')">Edit</button>
-                    <button onclick="deleteTodo(${todo.id})">Hapus</button>
-                `;
+          todos.forEach((todo) => {
+              const li = document.createElement("li");
+              li.className = todo.is_completed ? "completed" : "";
+              li.innerHTML = `
+                  <span>
+                      ${todo.title} - <strong>${todo.priority}</strong>
+                      <br><small>Dibuat: ${new Date(todo.created_at).toLocaleString("id-ID")}</small>
+                  </span>
+                  ${!todo.is_completed ? `<button onclick="toggleComplete(${todo.id})">Complete</button>` : `<button onclick="restoreTodo(${todo.id})">Tambah Kembali</button>`}
+                  <button onclick="editTodo(${todo.id}, '${todo.title}', '${todo.priority}')">Edit</button>
+                  <button onclick="deleteTodo(${todo.id})">Hapus</button>
+              `;
 
-                if (todo.is_completed) {
-                    historyList.appendChild(li);
-                    hasHistory = true;
-                } else {
-                    todoList.appendChild(li);
-                }
-            });
+              if (todo.is_completed) {
+                  historyList.appendChild(li);
+                  hasHistory = true;
+              } else {
+                  todoList.appendChild(li);
+              }
+          });
 
-            historyTitle.classList.toggle("hidden", !hasHistory);
-            historyList.classList.toggle("hidden", !hasHistory);
-        }
+          historyTitle.classList.toggle("hidden", !hasHistory);
+          historyList.classList.toggle("hidden", !hasHistory);
+      }
 
-        async function addTodo() {
-            const input = document.getElementById("todoInput");
-            const priority = document.getElementById("priorityInput").value;
+      async function addTodo() {
+          const input = document.getElementById("todoInput");
+          const priority = document.getElementById("priorityInput").value;
 
-            if (!input.value.trim()) {
-                alert("Judul tidak boleh kosong!");
-                return;
-            }
+          if (!input.value.trim()) {
+              alert("Judul tidak boleh kosong!");
+              return;
+          }
 
-            try {
-                const res = await fetch(API_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ title: input.value, priority }),
-                });
+          try {
+              const res = await fetch(API_URL, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ title: input.value, priority }),
+              });
 
-                if (!res.ok) throw new Error("Gagal menambahkan todo");
+              if (!res.ok) throw new Error("Gagal menambahkan todo");
 
-                input.value = "";
-                setTimeout(fetchTodos, 500);
-            } catch (error) {
-                console.error(error);
-            }
-        }
+              input.value = "";
+              setTimeout(fetchTodos, 500);
+          } catch (error) {
+              console.error(error);
+          }
+      }
 
-        async function toggleComplete(id) {
-            try {
-                const res = await fetch(`${API_URL}/${id}/toggle`, { method: "PATCH" });
-                if (!res.ok) throw new Error("Gagal mengubah status todo");
-                setTimeout(fetchTodos, 500);
-            } catch (error) {
-                console.error(error);
-            }
-        }
+      async function editTodo(id, currentTitle, currentPriority) {
+          const newTitle = prompt("Edit Judul Todo:", currentTitle);
+          if (newTitle === null || newTitle.trim() === "") return;
 
-        async function restoreTodo(id) {
-            try {
-                const res = await fetch(`${API_URL}/${id}/toggle`, { method: "PATCH" });
-                if (!res.ok) throw new Error("Gagal mengembalikan todo");
-                setTimeout(fetchTodos, 500);
-            } catch (error) {
-                console.error(error);
-            }
-        }
+          const newPriority = prompt("Edit Prioritas (High/Medium/Low):", currentPriority);
+          if (!["High", "Medium", "Low"].includes(newPriority)) {
+              alert("Prioritas harus High, Medium, atau Low!");
+              return;
+          }
 
-        async function deleteTodo(id) {
-            if (!confirm("Apakah Anda yakin ingin menghapus?")) return;
+          try {
+              const res = await fetch(`${API_URL}/${id}`, {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                      title: newTitle,
+                      priority: newPriority
+                  }),
+              });
 
-            try {
-                const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-                if (!res.ok) throw new Error("Gagal menghapus todo");
-                setTimeout(fetchTodos, 500);
-            } catch (error) {
-                console.error(error);
-            }
-        }
+              if (!res.ok) throw new Error("Gagal mengedit todo");
+              setTimeout(fetchTodos, 500);
+          } catch (error) {
+              console.error(error);
+          }
+      }
 
-        function showSection(section) {
-            document.getElementById("todoList").style.display = section === "todoList" ? "block" : "none";
-            document.getElementById("historyList").style.display = section === "historyList" ? "block" : "none";
-        }
 
-        fetchTodos();
+
+      async function toggleComplete(id) {
+          try {
+              const res = await fetch(`${API_URL}/${id}/toggle`, { method: "PATCH" });
+              if (!res.ok) throw new Error("Gagal mengubah status todo");
+              setTimeout(fetchTodos, 500);
+          } catch (error) {
+              console.error(error);
+          }
+      }
+
+      async function restoreTodo(id) {
+          try {
+              const res = await fetch(`${API_URL}/${id}/toggle`, { method: "PATCH" });
+              if (!res.ok) throw new Error("Gagal mengembalikan todo");
+              setTimeout(fetchTodos, 500);
+          } catch (error) {
+              console.error(error);
+          }
+      }
+
+      async function deleteTodo(id) {
+          if (!confirm("Apakah Anda yakin ingin menghapus?")) return;
+
+          try {
+              const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+              if (!res.ok) throw new Error("Gagal menghapus todo");
+              setTimeout(fetchTodos, 500);
+          } catch (error) {
+              console.error(error);
+          }
+      }
+
+      function showSection(section) {
+          document.getElementById("todoList").style.display = section === "todoList" ? "block" : "none";
+          document.getElementById("historyList").style.display = section === "historyList" ? "block" : "none";
+      }
+
+      fetchTodos();
     </script>
-</body>
+  </body>
 </html>
