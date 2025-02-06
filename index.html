@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Todo List</title>
     <style>
-        .completed { text-decoration: line-through; }
+        .completed { text-decoration: line-through; color: gray; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
     <h1>Todo List</h1>
-    
+
     <div>
         <input type="text" id="todoInput" placeholder="Tambahkan tugas...">
         <select id="priorityInput">
@@ -21,7 +22,15 @@
         <button onclick="addTodo()">Tambah</button>
     </div>
 
+    <div>
+        <button onclick="showSection('todoList')">Tugas Aktif</button>
+        <button onclick="showSection('historyList')">History</button>
+    </div>
+
     <ul id="todoList"></ul>
+    <h2 class="hidden" id="historyTitle">History</h2>
+    <ul id="historyList" class="hidden"></ul>
+
     <script>
         const API_URL = "https://todo-production-7421.up.railway.app/todos";
 
@@ -30,34 +39,49 @@
                 const res = await fetch(API_URL);
                 if (!res.ok) throw new Error("Gagal mengambil data");
                 const todos = await res.json();
-                renderTodos(todos);
+
+                const sortedTodos = todos.sort((a, b) => {
+                    const priorityOrder = { High: 1, Medium: 2, Low: 3 };
+                    return priorityOrder[a.priority] - priorityOrder[b.priority];
+                });
+
+                renderTodos(sortedTodos);
             } catch (error) {
                 console.error(error);
             }
         }
 
-        function formatDate(timestamp) {
-            const date = new Date(timestamp);
-            return date.toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" });
-        }
-
         function renderTodos(todos) {
             const todoList = document.getElementById("todoList");
+            const historyList = document.getElementById("historyList");
+            const historyTitle = document.getElementById("historyTitle");
+
             todoList.innerHTML = "";
+            historyList.innerHTML = "";
+
+            let hasHistory = false;
 
             todos.forEach((todo) => {
                 const li = document.createElement("li");
                 li.className = todo.is_completed ? "completed" : "";
                 li.innerHTML = `
-                    <span onclick="toggleComplete(${todo.id}, ${todo.is_completed})">
+                    <span>
                         ${todo.title} - <strong>${todo.priority}</strong>
-                        <br><small>Dibuat: ${formatDate(todo.created_at)}</small>
+                        <br><small>Dibuat: ${new Date(todo.created_at).toLocaleString("id-ID")}</small>
                     </span>
-                    <button onclick="editTodo(${todo.id}, '${todo.title}', '${todo.priority}')">Edit</button>
+                    ${!todo.is_completed ? `<button onclick="toggleComplete(${todo.id})">Complete</button>` : ""}
                     <button onclick="deleteTodo(${todo.id})">Hapus</button>
                 `;
-                todoList.appendChild(li);
+
+                if (todo.is_completed) {
+                    historyList.appendChild(li);
+                    hasHistory = true;
+                } else {
+                    todoList.appendChild(li);
+                }
             });
+
+            historyTitle.classList.toggle("hidden", !hasHistory);
         }
 
         async function addTodo() {
@@ -85,40 +109,9 @@
             }
         }
 
-        async function editTodo(id, currentTitle, currentPriority) {
-            const newTitle = prompt("Edit Judul Todo:", currentTitle);
-            if (newTitle === null || newTitle.trim() === "") return;
-
-            const newPriority = prompt("Edit Prioritas (High/Medium/Low):", currentPriority);
-            if (!["High", "Medium", "Low"].includes(newPriority)) {
-                alert("Prioritas harus High, Medium, atau Low!");
-                return;
-            }
-
+        async function toggleComplete(id) {
             try {
-                const res = await fetch(`${API_URL}/${id}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        title: newTitle,
-                        priority: newPriority,
-                        is_completed: false
-                    }),
-                });
-
-                if (!res.ok) throw new Error("Gagal mengedit todo");
-                setTimeout(fetchTodos, 500);
-            } catch (error) {
-                console.error(error);
-            }
-        }
-
-        async function toggleComplete(id, isCompleted) {
-            try {
-                const res = await fetch(`${API_URL}/${id}/toggle`, {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" }
-                });
+                const res = await fetch(`${API_URL}/${id}/toggle`, { method: "PATCH" });
                 if (!res.ok) throw new Error("Gagal mengubah status todo");
                 setTimeout(fetchTodos, 500);
             } catch (error) {
@@ -136,6 +129,11 @@
             } catch (error) {
                 console.error(error);
             }
+        }
+
+        function showSection(section) {
+            document.getElementById("todoList").style.display = section === "todoList" ? "block" : "none";
+            document.getElementById("historyList").style.display = section === "historyList" ? "block" : "none";
         }
 
         fetchTodos();
