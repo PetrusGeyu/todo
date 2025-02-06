@@ -70,6 +70,7 @@
                         <br><small>Dibuat: ${new Date(todo.created_at).toLocaleString("id-ID")}</small>
                     </span>
                     ${!todo.is_completed ? `<button onclick="toggleComplete(${todo.id})">Complete</button>` : ""}
+                    <button onclick="editTodo(${todo.id}, '${todo.title}', '${todo.priority}')">Edit</button>
                     <button onclick="deleteTodo(${todo.id})">Hapus</button>
                 `;
 
@@ -82,6 +83,7 @@
             });
 
             historyTitle.classList.toggle("hidden", !hasHistory);
+            historyList.classList.toggle("hidden", !hasHistory);
         }
 
         async function addTodo() {
@@ -103,6 +105,33 @@
                 if (!res.ok) throw new Error("Gagal menambahkan todo");
 
                 input.value = "";
+                setTimeout(fetchTodos, 500);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        async function editTodo(id, currentTitle, currentPriority) {
+            const newTitle = prompt("Edit Judul Todo:", currentTitle);
+            if (newTitle === null || newTitle.trim() === "") return;
+
+            const newPriority = prompt("Edit Prioritas (High/Medium/Low):", currentPriority);
+            if (!["High", "Medium", "Low"].includes(newPriority)) {
+                alert("Prioritas harus High, Medium, atau Low!");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        title: newTitle,
+                        priority: newPriority
+                    }),
+                });
+
+                if (!res.ok) throw new Error("Gagal mengedit todo");
                 setTimeout(fetchTodos, 500);
             } catch (error) {
                 console.error(error);
