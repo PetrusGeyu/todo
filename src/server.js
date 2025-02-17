@@ -8,9 +8,9 @@ const PORT = process.env.PORT || 8080;
 
 // ✅ Middleware CORS harus diaktifkan sebelum route
 const corsOptions = {
-    origin: "*", // Jika ingin mengizinkan semua domain
-    methods: "GET,POST,PUT,PATCH,DELETE",
-    allowedHeaders: "Content-Type",
+  origin: "*", // Jika ingin mengizinkan semua domain
+  methods: "GET,POST,PUT,PATCH,DELETE",
+  allowedHeaders: "Content-Type",
 };
 
 app.use(cors(corsOptions));
@@ -18,22 +18,23 @@ app.use(express.json());
 
 // ✅ Koneksi ke PostgreSQL di Railway
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false,
-    },
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
-app.get('/todos', async (req, res) => {
+app.get("/todos", async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM todos ORDER BY created_at DESC');
+    const result = await pool.query(
+      "SELECT * FROM todos ORDER BY created_at DESC"
+    );
     res.json(result.rows);
   } catch (err) {
-    console.error('Error fetching todos:', err);
+    console.error("Error fetching todos:", err);
     res.status(500).json({ error: err.message });
   }
 });
-
 
 // Middleware
 app.use(cors());
@@ -53,73 +54,70 @@ const initDb = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('Database initialized successfully');
+    console.log("Database initialized successfully");
   } catch (err) {
-    console.error('Database initialization failed:', err);
+    console.error("Database initialization failed:", err);
   }
 };
 
 initDb();
 
-
-
-
 // CRUD Routes
 
 // Get all todos
-app.get('/todos', async (req, res) => {
+app.get("/todos", async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT * FROM todos ORDER BY created_at DESC'
+      "SELECT * FROM todos ORDER BY created_at DESC"
     );
     res.json(result.rows);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch todos' });
+    res.status(500).json({ error: "Failed to fetch todos" });
   }
 });
 
 // Get todo by id
-app.get('/todos/:id', async (req, res) => {
+app.get("/todos/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('SELECT * FROM todos WHERE id = $1', [id]);
-    
+    const result = await pool.query("SELECT * FROM todos WHERE id = $1", [id]);
+
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Todo not found' });
+      return res.status(404).json({ error: "Todo not found" });
     }
-    
+
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch todo' });
+    res.status(500).json({ error: "Failed to fetch todo" });
   }
 });
 
 // Create new todo
-app.post('/todos', async (req, res) => {
+app.post("/todos", async (req, res) => {
   try {
     const { title, description, priority } = req.body;
-    
+
     if (!title) {
-      return res.status(400).json({ error: 'Title is required' });
+      return res.status(400).json({ error: "Title is required" });
     }
 
     const result = await pool.query(
-      'INSERT INTO todos (title, description, priority) VALUES ($1, $2, $3) RETURNING *',
-      [title, description, priority || 'Medium']
+      "INSERT INTO todos (title, description, priority) VALUES ($1, $2, $3) RETURNING *",
+      [title, description, priority || "Medium"]
     );
-    
+
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to create todo' });
+    res.status(500).json({ error: "Failed to create todo" });
   }
 });
 
 // Update todo
-app.put('/todos/:id', async (req, res) => {
+app.put("/todos/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, priority, is_completed } = req.body;
-    
+
     const result = await pool.query(
       `UPDATE todos 
        SET title = $1, 
@@ -131,22 +129,22 @@ app.put('/todos/:id', async (req, res) => {
        RETURNING *`,
       [title, description, priority, is_completed, id]
     );
-    
+
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Todo not found' });
+      return res.status(404).json({ error: "Todo not found" });
     }
-    
+
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to update todo' });
+    res.status(500).json({ error: "Failed to update todo" });
   }
 });
 
 // Toggle todo completion status
-app.patch('/todos/:id/toggle', async (req, res) => {
+app.patch("/todos/:id/toggle", async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const result = await pool.query(
       `UPDATE todos 
        SET is_completed = NOT is_completed,
@@ -155,34 +153,34 @@ app.patch('/todos/:id/toggle', async (req, res) => {
        RETURNING *`,
       [id]
     );
-    
+
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Todo not found' });
+      return res.status(404).json({ error: "Todo not found" });
     }
-    
+
     res.json(result.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to toggle todo status' });
+    res.status(500).json({ error: "Failed to toggle todo status" });
   }
 });
 
 // Delete todo
-app.delete('/todos/:id', async (req, res) => {
+app.delete("/todos/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const result = await pool.query(
-      'DELETE FROM todos WHERE id = $1 RETURNING *',
+      "DELETE FROM todos WHERE id = $1 RETURNING *",
       [id]
     );
-    
+
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Todo not found' });
+      return res.status(404).json({ error: "Todo not found" });
     }
-    
-    res.json({ message: 'Todo deleted successfully' });
+
+    res.json({ message: "Todo deleted successfully" });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to delete todo' });
+    res.status(500).json({ error: "Failed to delete todo" });
   }
 });
 
