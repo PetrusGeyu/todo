@@ -6,17 +6,13 @@ const { Pool } = require("pg");
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// ✅ Middleware CORS harus diaktifkan sebelum route
-const corsOptions = {
-  origin: "*", // Jika ingin mengizinkan semua domain
-  methods: "GET,POST,PUT,PATCH,DELETE",
-  allowedHeaders: "Content-Type",
-};
-
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json());
 
-// ✅ Koneksi ke PostgreSQL di Railway
+// ✅ Array untuk menyimpan data di memory sesuai ketentuan
+let todosArray = [];
+
+// Koneksi database untuk persistensi
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -24,25 +20,10 @@ const pool = new Pool({
   },
 });
 
-app.get("/todos", async (req, res) => {
+// Inisialisasi array dari database saat startup
+const initTodosArray = async () => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM todos ORDER BY created_at DESC"
-    );
-    res.json(result.rows);
-  } catch (err) {
-    console.error("Error fetching todos:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Create todos table if not exists
-const initDb = async () => {
-  try {
+    // Buat tabel jika belum ada
     await pool.query(`
       CREATE TABLE IF NOT EXISTS todos (
         id SERIAL PRIMARY KEY,
@@ -54,70 +35,73 @@ const initDb = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log("Database initialized successfully");
+
+    // Load data dari database ke array
+    const result = await pool.query("SELECT * FROM todos ORDER BY created_at DESC");
+    todosArray = result.rows;
+    console.log("Todos array initialized with database data");
   } catch (err) {
-    console.error("Database initialization failed:", err);
+    console.error("Failed to initialize todos array:", err);
   }
 };
 
-initDb();
+// Jalankan inisialisasi
+initTodosArray();
 
-// CRUD Routes
-
-// Get all todos
-app.get("/todos", async (req, res) => {
+// Get all todos (dari array)
+app.get("/todos", (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM todos ORDER BY created_at DESC"
-    );
-    res.json(result.rows);
+    res.json(todosArray);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch todos" });
   }
 });
 
-// Get todo by id
-app.get("/todos/:id", async (req, res) => {
+// Get todo by id (dari array)
+app.get("/todos/:id", (req, res) => {
   try {
-    const { id } = req.params;
-    const result = await pool.query("SELECT * FROM todos WHERE id = $1", [id]);
-
-    if (result.rows.length === 0) {
+    const todo = todosArray.find(t => t.id === parseInt(req.params.id));
+    if (!todo) {
       return res.status(404).json({ error: "Todo not found" });
     }
-
-    res.json(result.rows[0]);
+    res.json(todo);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch todo" });
   }
 });
 
-// Create new todo
+// Create new todo (simpan ke array dan database)
 app.post("/todos", async (req, res) => {
   try {
-    const { title, description, priority } = req.body;
+    const { title, description, priority = "Medium" } = req.body;
 
     if (!title) {
       return res.status(400).json({ error: "Title is required" });
     }
 
+    // Simpan ke database
     const result = await pool.query(
       "INSERT INTO todos (title, description, priority) VALUES ($1, $2, $3) RETURNING *",
-      [title, description, priority || "Medium"]
+      [title, description, priority]
     );
+    
+    // Update array
+    const newTodo = result.rows[0];
+    todosArray.unshift(newTodo); // Add to beginning for DESC order
 
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(newTodo);
   } catch (err) {
     res.status(500).json({ error: "Failed to create todo" });
   }
 });
 
-// Update todo
+// Update todo (update array dan database)
 app.put("/todos/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, priority, is_completed } = req.body;
 
+    // Update database
     const result = await pool.query(
       `UPDATE todos 
        SET title = $1, 
@@ -134,17 +118,24 @@ app.put("/todos/:id", async (req, res) => {
       return res.status(404).json({ error: "Todo not found" });
     }
 
+    // Update array
+    const todoIndex = todosArray.findIndex(t => t.id === parseInt(id));
+    if (todoIndex !== -1) {
+      todosArray[todoIndex] = result.rows[0];
+    }
+
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: "Failed to update todo" });
   }
 });
 
-// Toggle todo completion status
+// Toggle completion (update array dan database)
 app.patch("/todos/:id/toggle", async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Update database
     const result = await pool.query(
       `UPDATE todos 
        SET is_completed = NOT is_completed,
@@ -158,17 +149,24 @@ app.patch("/todos/:id/toggle", async (req, res) => {
       return res.status(404).json({ error: "Todo not found" });
     }
 
+    // Update array
+    const todoIndex = todosArray.findIndex(t => t.id === parseInt(id));
+    if (todoIndex !== -1) {
+      todosArray[todoIndex] = result.rows[0];
+    }
+
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: "Failed to toggle todo status" });
   }
 });
 
-// Delete todo
+// Delete todo (hapus dari array dan database)
 app.delete("/todos/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
+    // Delete from database
     const result = await pool.query(
       "DELETE FROM todos WHERE id = $1 RETURNING *",
       [id]
@@ -178,13 +176,15 @@ app.delete("/todos/:id", async (req, res) => {
       return res.status(404).json({ error: "Todo not found" });
     }
 
+    // Delete from array
+    todosArray = todosArray.filter(t => t.id !== parseInt(id));
+
     res.json({ message: "Todo deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete todo" });
   }
 });
 
-// Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
