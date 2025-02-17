@@ -1,14 +1,14 @@
 // Tetap menggunakan API URL yang sama
 const API_URL = "https://todo-production-7421.up.railway.app/todos";
 
-// ✅ Fungsi untuk mengambil data dari array di backend
+//  Fungsi untuk mengambil data dari array di backend
 async function fetchTodos() {
   try {
     const res = await fetch(API_URL);
     if (!res.ok) throw new Error("Gagal mengambil data");
     const todos = await res.json();
 
-    // ✅ Sort berdasarkan prioritas (data dari array)
+    //  Sort berdasarkan prioritas (data dari array)
     const sortedTodos = todos.sort((a, b) => {
       const priorityOrder = { High: 1, Medium: 2, Low: 3 };
       return priorityOrder[a.priority] - priorityOrder[b.priority];
@@ -36,7 +36,7 @@ function renderTodos(todos) {
     const li = document.createElement("li");
     li.className = todo.is_completed ? "completed" : "";
 
-    // ✅ Tambahkan handling untuk description jika ada
+    //  Tambahkan handling untuk description jika ada
     const description = todo.description
       ? `<p class="todo-description">${todo.description}</p>`
       : "";
@@ -86,7 +86,7 @@ function renderTodos(todos) {
   historyList.classList.toggle("hidden", !hasHistory);
 }
 
-// ✅ Fungsi add yang mempertimbangkan description
+//  Fungsi add yang mempertimbangkan description
 async function addTodo() {
   const titleInput = document.getElementById("todoInput");
   const descInput = document.getElementById("descriptionInput");
@@ -123,7 +123,7 @@ async function addTodo() {
   }
 }
 
-// ✅ Fungsi edit yang lebih komprehensif
+//  Fungsi edit yang lebih komprehensif
 async function editTodo(id) {
   // Ambil data todo yang akan diedit
   const res = await fetch(`${API_URL}/${id}`);
@@ -170,7 +170,7 @@ async function editTodo(id) {
   }
 }
 
-// ✅ Fungsi toggle dengan error handling yang lebih baik
+//  Fungsi toggle dengan error handling yang lebih baik
 async function toggleComplete(id) {
   try {
     const res = await fetch(`${API_URL}/${id}/toggle`, {
@@ -188,7 +188,7 @@ async function toggleComplete(id) {
 // Fungsi restore menggunakan toggle yang sama
 const restoreTodo = toggleComplete;
 
-// ✅ Fungsi delete dengan konfirmasi dan error handling
+//  Fungsi delete dengan konfirmasi dan error handling
 async function deleteTodo(id) {
   if (!confirm("Apakah Anda yakin ingin menghapus todo ini?")) return;
 

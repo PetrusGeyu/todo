@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
-// ✅ Array untuk menyimpan data di memory sesuai ketentuan
+//  Array untuk menyimpan data di memory sesuai ketentuan
 let todosArray = [];
 
 // Koneksi database untuk persistensi
