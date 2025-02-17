@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Todo List</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Todo List</h1>
+
+      <div class="input-group">
+        <div class="input-row">
+          <input type="text" id="todoInput" placeholder="Tambahkan judul tugas..." />
+          <input type="text" id="descriptionInput" placeholder="Tambahkan deskripsi (opsional)..." />
+        </div>
+        <div class="input-row">
+          <select id="priorityInput">
+            <option value="High">High</option>
+            <option value="Medium" selected>Medium</option>
+            <option value="Low">Low</option>
+          </select>
+          <button class="add-button" onclick="addTodo()">Tambah</button>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="nav-button active" onclick="showSection('todoList')">Tugas Aktif</button>
+        <button class="nav-button" onclick="showSection('historyList')">History</button>
+      </div>
+
+      <ul id="todoList"></ul>
+      <h2 class="hidden" id="historyTitle">History</h2>
+      <ul id="historyList" class="hidden"></ul>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
